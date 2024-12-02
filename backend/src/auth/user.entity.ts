@@ -15,5 +15,5 @@ export class User {
   refreshToken: string;
 
   @Column()
-  hubspotId: string; // Store HubSpot user ID if needed
+  hubspotId: string; // Store HubSpot user ID if needed?
 }
