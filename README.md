@@ -2,7 +2,7 @@
 
 ## Project Idea
 
-Create a simple CRM dashboard that allows users to authenticate with HubSpot, view their contacts, and add new contacts directly from our application.
+Create a simple CRM dashboard that allows users to authenticate with HubSpot, view their contacts, and add new contacts directly from our end(app).
 
 ## Project Overview
 
