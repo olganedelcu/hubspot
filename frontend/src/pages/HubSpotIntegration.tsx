@@ -2,7 +2,7 @@ import React from "react";
 
 const HubSpotIntegration: React.FC = () => {
     const redirectToHubSpot = () => {
-        window.location.href = 'http://localhost:3000/auth/hubspot'; // Redirect to our backend endpoint
+        window.location.href = 'http://localhost:3001/hubspot/callback'; // Redirect to our backend endpoint
     };
 
     return (
