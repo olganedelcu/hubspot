@@ -9,7 +9,14 @@ export class AuthController {
   // Step 1: Redirect User to HubSpot for Authorization
   @Get('hubspot')
   redirectToHubSpot(@Res() res: Response) {
-    const authUrl = `https://app.hubspot.com/oauth/authorize?client_id=${process.env.HUBSPOT_CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.REDIRECT_URI)}&scope=crm.objects.contacts.read`;
+    const clientId = process.env.HUBSPOT_CLIENT_ID;
+    const redirectUri = process.env.REDIRECT_URI;
+
+    if (!clientId || !redirectUri) {
+      return res.status(500).send('Missing environment variables');
+    }
+
+    const authUrl = `https://app.hubspot.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=crm.objects.contacts.read`;
     res.redirect(authUrl);
   }
 
@@ -19,11 +26,12 @@ export class AuthController {
     try {
       // Attempt to retrieve the access token using the provided authorization code
       const accessToken = await this.authService.getAccessToken(authCode);
-      console.log('our·code', accessToken);
+      console.log('Access Token:', accessToken);
+
       // Redirect to frontend application with the access token
       res.redirect(
         `http://localhost:3001/auth/hubspot?access_token=${accessToken}`,
-      ); // Updated URL
+      );
     } catch (error) {
       console.error('Error retrieving access token:', error);
       res.status(500).send('Error retrieving access token');
