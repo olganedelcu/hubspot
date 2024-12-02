@@ -17,7 +17,7 @@ export class AuthController {
   @Get('callback')
   async handleCallback(@Query('code') authCode: string, @Res() res: Response) {
     try {
-      // Attempt to retrieve the access token using the provided authorization code
+      // Attempt to retrieve the access token using authorization code
       const accessToken = await this.authService.getAccessToken(authCode);
       console.log('our·code', accessToken);
       // Redirect to frontend application with the access token
