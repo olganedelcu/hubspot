@@ -9,7 +9,7 @@ export class AuthService {
     const clientId = this.configService.get<string>('HUBSPOT_CLIENT_ID');
     const redirectUri = this.configService.get<string>('REDIRECT_URI');
     const scope = this.configService.get<string>('SCOPE');
-    const state = 'null'; // You can generate a unique state if needed
+    const state = 'null'; 
 
     return `https://app.hubspot.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&state=${state}`;
   }
@@ -19,7 +19,7 @@ export class AuthService {
       'HUBSPOT_CLIENT_SECRET',
     );
 
-    // Logic to retrieve access token using the authCode and clientSecret
+    // Logic to retrieve access token using authCode and clientSecret
     const response = await fetch('https://api.hubapi.com/oauth/v1/token', {
       method: 'POST',
       headers: {
