@@ -1,23 +1,29 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AuthModule } from './auth/auth.module';
+import { AuthModule } from './auth/auth.module'; // Import AuthModule
 import { ConfigModule } from '@nestjs/config';
-import * as Joi from 'joi';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { TokenController } from './token/token.controller';
+import { TokenService } from './token/token.service';
+import { RootController } from './root.controller';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true, // Makes the config globally available
-      validationSchema: Joi.object({
-        HUBSPOT_CLIENT_ID: Joi.string().required(),
-        HUBSPOT_CLIENT_SECRET: Joi.string().required(),
-        REDIRECT_URI: Joi.string().uri().required(),
-      }),
+    ConfigModule.forRoot(),
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: 'localhost',
+      port: 5432,
+      username: 'postgres',
+      password: 'your_password',
+      database: 'postgres',
+      entities: [__dirname + '/**/*.entity{.ts,.js}'],
+      synchronize: true,
     }),
-    AuthModule,
+    AuthModule, // Add AuthModule here
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, TokenController, RootController],
+  providers: [AppService, TokenService],
 })
 export class AppModule {}

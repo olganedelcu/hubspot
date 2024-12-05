@@ -20,7 +20,6 @@ const HubSpotCallback: React.FC = () => {
         <div>
             <h1>HubSpot Callback</h1>
             <p>Processing your request...</p>
-            {/* Add more UI elements as needed */}
         </div>
     );
 };

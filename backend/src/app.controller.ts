@@ -1,12 +1,25 @@
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { Controller, Get, Res } from '@nestjs/common';
+import { Response } from 'express';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
-
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  getRoot(@Res() res: Response) {
+    res.json({
+      message: 'Welcome to the API!',
+      status: 'API is running',
+      availableRoutes: [
+        {
+          method: 'GET',
+          path: '/auth/hubspot',
+          description: 'Redirect to HubSpot for authorization',
+        },
+        {
+          method: 'GET',
+          path: '/auth/callback',
+          description: 'Handle HubSpot callback',
+        },
+      ],
+    });
   }
 }
