@@ -1,27 +1,59 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
+import TokenDisplay from "./TokenDisplay";
 
-const HubSpotCallback: React.FC = () => {
-    useEffect(() => {
-        const handleCallback = async () => {
-            try {
-                // Logic to handle the OAuth callback
-                console.log("Handling HubSpot OAuth callback...");
-                // Add your callback handling logic here
-            } catch (error) {
-                console.error("Error handling HubSpot callback:", error);
-                // Optionally, display an error message to the user
-            }
-        };
+interface HubSpotCallbackProps {
+  clientSecret: string;
+}
 
-        handleCallback();
-    }, []);
+const HubSpotCallback: React.FC<HubSpotCallbackProps> = ({ clientSecret }) => {
+  const location = useLocation();
+  const [token, setToken] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-    return (
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const code = params.get("code");
+
+    if (code) {
+      fetch("http://localhost:3001/auth/hubspot/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          code,
+          client_secret: clientSecret,
+        }),
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Failed to fetch access token");
+          }
+          return response.json();
+        })
+        .then((data) => {
+          setToken(data.access_token);
+        })
+        .catch((err) => {
+          setError(err.message);
+        });
+    }
+  }, [location.search, clientSecret]);
+
+  return (
+    <div>
+      {error && <p>Error: {error}</p>}
+      {token ? (
         <div>
-            <h1>HubSpot Callback</h1>
-            <p>Processing your request...</p>
+          <p>Processing your request...</p>
+          <TokenDisplay token={token} />
         </div>
-    );
+      ) : (
+        <p>Loading...</p>
+      )}
+    </div>
+  );
 };
 
 export default HubSpotCallback;

@@ -9,13 +9,12 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('hubspot')
-  redirectToHubSpot(
+  async redirectToHubSpot(
     @Body()
     body: {
-      client_id: string;
-      client_secret: string;
-      redirect_uri: string;
-      scopes: string;
+      client_id: string; // User-provided client ID
+      redirect_uri: string; // User-provided redirect URI
+      scopes: string; // User-provided scopes
     },
     @Res() res: Response,
   ) {
@@ -29,7 +28,9 @@ export class AuthController {
     stateStore[state] = true; // Store the state
 
     const authUrl = `https://app.hubspot.com/oauth/authorize?client_id=${client_id}&redirect_uri=${encodeURIComponent(redirect_uri)}&scope=${encodeURIComponent(scopes)}&state=${state}`;
-    res.redirect(authUrl);
+
+    // Return the URL as JSON
+    return res.json({ authUrl });
   }
 
   @Get('callback')
@@ -58,5 +59,34 @@ export class AuthController {
     } finally {
       delete stateStore[state];
     }
+  }
+
+  // New endpoint to serve the HTML link
+  @Get('install')
+  getInstallLink(
+    @Query('client_id') clientId: string,
+    @Query('redirect_uri') redirectUri: string,
+    @Query('scopes') scopes: string,
+    @Res() res: Response,
+  ) {
+    if (!clientId || !redirectUri || !scopes) {
+      return res.status(400).send('Missing required query parameters');
+    }
+
+    const state = Math.random().toString(36).substring(2); // Generate a new state
+    stateStore[state] = true; // Store the state
+
+    // Construct the authorization URL
+    const authUrl = `https://app.hubspot.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&state=${state}`;
+
+    // Serve the HTML link
+    res.send(`
+      <html>
+        <body>
+          <h1>Install HubSpot Integration</h1>
+          <a href="${authUrl}">Install</a>
+        </body>
+      </html>
+    `);
   }
 }
