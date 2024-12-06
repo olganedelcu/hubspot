@@ -13,7 +13,7 @@ export class AuthService {
     });
   }
 
-  async getAccessToken(authCode: string): Promise<string> {
+  async getAccessToken(authCode: string, redirectUri: string): Promise<string> {
     const clientSecret = this.configService.get<string>(
       'HUBSPOT_CLIENT_SECRET',
     );
@@ -27,7 +27,7 @@ export class AuthService {
             grant_type: 'authorization_code',
             client_id: this.configService.get<string>('HUBSPOT_CLIENT_ID'),
             client_secret: clientSecret,
-            redirect_uri: this.configService.get<string>('REDIRECT_URI'),
+            redirect_uri: redirectUri,
             code: authCode,
           },
           headers: {
@@ -61,8 +61,10 @@ export class AuthService {
     }
   }
 
-  getHubSpotAuthUrl(): string {
-    // Return the HubSpot authorization URL
-    return 'https://app.hubspot.com/oauth/authorize?...'; // Replace with actual URL
+  getHubSpotAuthUrl(scopes: string): string {
+    // Return the HubSpot authorization URL with dynamic scopes
+    const clientId = this.configService.get<string>('HUBSPOT_CLIENT_ID');
+    const redirectUri = this.configService.get<string>('REDIRECT_URI'); // You can also set this in your config
+    return `https://app.hubspot.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}`;
   }
 }

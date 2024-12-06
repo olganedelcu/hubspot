@@ -5,7 +5,7 @@ const HubSpotIntegration: React.FC = () => {
     const [userId, setUserId] = useState<string>('');
     const [userSecret, setUserSecret] = useState<string>('');
     const [userRedirectUri, setUserRedirectUri] = useState<string>('');
-
+    const [scopes, setScopes] = useState<string>('');
 
     const handleIntegration = async () => {
         try {
@@ -20,6 +20,7 @@ const HubSpotIntegration: React.FC = () => {
                     client_id: userId,
                     client_secret: userSecret,
                     redirect_uri: userRedirectUri,
+                    scopes: scopes,
                 }),
             });
 
@@ -66,6 +67,19 @@ const HubSpotIntegration: React.FC = () => {
                         onChange={(e) => setUserRedirectUri(e.target.value)}
                         placeholder="Enter your HubSpot Redirect URI" 
                     />
+                </label>
+            </div>
+            <div>
+                <label>
+                    Scopes:
+                    <select value={scopes} onChange={(e) => setScopes(e.target.value)}>
+                        <option value="">Select a scope</option>
+                        <option value="crm.objects.companies.read">Companies Read</option>
+                        <option value="crm.objects.contacts.read">Contacts Read</option>
+                        <option value="crm.objects.deals.read">Deals Read</option>
+                        <option value="crm.objects.tickets.read">Tickets Read</option>
+                        <option value="e-commerce">E-commerce</option>
+                    </select>
                 </label>
             </div>
             <button onClick={handleIntegration}>Start Integration</button>
