@@ -30,6 +30,7 @@ const HubSpotCallback: React.FC = () => {
 
           if (!tokenResponse.ok) {
             const errorData = await tokenResponse.json();
+            console.error("Error data:", errorData);
             throw new Error(
               `Failed to fetch access token: ${
                 errorData.message || "Unknown error"
@@ -40,7 +41,7 @@ const HubSpotCallback: React.FC = () => {
           const tokenData = await tokenResponse.json();
           setToken(tokenData.access_token);
         } catch (err) {
-          console.error("Error during token exchange:", err as Error);
+          console.error("Error during token exchange:", err);
           setError((err as Error).message);
         } finally {
           setLoading(false);
