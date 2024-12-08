@@ -21,12 +21,14 @@ label {
 
 input[type="text"],
 input[type="password"],
-input[type="url"] {
+input[type="url"],
+select {
     width: 100%;
     padding: 10px;
     margin-top: 5px;
     border: 1px solid #ccc;
     border-radius: 4px;
+    font-size: 16px;
 }
 
 button {
@@ -46,10 +48,6 @@ button:hover {
 }
 
 select {
-    width: 105%;
-    padding: 10px;
-    margin-top: 5px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 16px;
+    height: auto;
+    margin-bottom: 20px;
 }

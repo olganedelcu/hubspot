@@ -1,29 +1,38 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AuthModule } from './auth/auth.module'; // Import AuthModule
-import { ConfigModule } from '@nestjs/config';
+import { AuthModule } from './auth/auth.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { TokenController } from './token/token.controller';
 import { TokenService } from './token/token.service';
 import { RootController } from './root.controller';
+import { UserModule } from './user/user.module';
+import config from '../config';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      load: [config],
+      isGlobal: true,
+    }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: 'your_password',
-      database: 'postgres',
+      host: process.env.DB_HOST || 'localhost',
+      port: +process.env.DB_PORT || 5432,
+      username: process.env.DB_USERNAME || 'postgres',
+      password: process.env.DB_PASSWORD || 'olga',
+      database: process.env.DB_DATABASE || 'postgres',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
     }),
-    AuthModule, // Add AuthModule here
+    AuthModule,
+    UserModule,
   ],
-  controllers: [AppController, TokenController, RootController],
+  controllers: [AppController, RootController],
   providers: [AppService, TokenService],
 })
-export class AppModule {}
+export class AppModule {
+  constructor(private configService: ConfigService) {
+    console.log('Redirect URI:', this.configService.get('redirectUri'));
+  }
+}

@@ -1,92 +1,80 @@
-import { Controller, Post, Body, Res, Get, Query } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import { Controller, Post, Body, Res } from '@nestjs/common';
 import { Response } from 'express';
+import { ConfigService } from '@nestjs/config';
+import axios from 'axios'; // Import axios for making HTTP requests
 
 const stateStore: { [key: string]: boolean } = {};
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private configService: ConfigService) {}
 
   @Post('hubspot')
   async redirectToHubSpot(
-    @Body()
-    body: {
-      client_id: string; // User-provided client ID
-      redirect_uri: string; // User-provided redirect URI
-      scopes: string; // User-provided scopes
-    },
+    @Body() body: { scopes: string; accountId?: string },
     @Res() res: Response,
   ) {
-    const { client_id, redirect_uri, scopes } = body;
+    const { scopes, accountId } = body;
+    const client_id = this.configService.get<string>('hubspotClientId');
+    const redirect_uri = 'http://localhost:5173/hubspot/callback';
+
+    console.log('Client ID:', client_id);
+    console.log('Redirect URI:', redirect_uri);
+    console.log('Scopes:', scopes);
 
     if (!client_id || !redirect_uri || !scopes) {
-      return res.status(400).send('Missing required parameters');
+      return res.status(400).json({ message: 'Missing required parameters' });
     }
 
     const state = Math.random().toString(36).substring(2);
     stateStore[state] = true; // Store the state
 
-    const authUrl = `https://app.hubspot.com/oauth/authorize?client_id=${client_id}&redirect_uri=${encodeURIComponent(redirect_uri)}&scope=${encodeURIComponent(scopes)}&state=${state}`;
+    const accountPath = accountId ? `${accountId}/` : '';
+    const authUrl = `https://app.hubspot.com/oauth/${accountPath}authorize?client_id=${client_id}&redirect_uri=${encodeURIComponent(redirect_uri)}&scope=${encodeURIComponent(scopes)}&state=${state}`;
 
-    // Return the URL as JSON
+    console.log('Auth URL:', authUrl);
+
     return res.json({ authUrl });
   }
 
-  @Get('callback')
-  async handleCallback(
-    @Query('code') authCode: string,
-    @Query('redirect_uri') redirectUri: string,
-    @Query('state') state: string,
+  @Post('hubspot/token')
+  async exchangeCodeForToken(
+    @Body() body: { code: string },
     @Res() res: Response,
   ) {
-    if (!stateStore[state]) {
-      return res.status(403).send('Invalid state parameter');
+    const { code } = body;
+    const client_id = this.configService.get<string>('hubspotClientId');
+    const client_secret = this.configService.get<string>('hubspotClientSecret');
+    const redirect_uri = 'http://localhost:5173/hubspot/callback';
+
+    if (!code || !client_id || !client_secret || !redirect_uri) {
+      return res.status(400).json({ message: 'Missing required parameters' });
     }
 
     try {
-      const accessToken = await this.authService.getAccessToken(
-        authCode,
-        redirectUri,
+      const response = await axios.post(
+        'https://api.hubapi.com/oauth/v1/token',
+        null,
+        {
+          params: {
+            grant_type: 'authorization_code',
+            client_id,
+            client_secret,
+            redirect_uri,
+            code,
+          },
+        },
       );
-      console.log('Access Token:', accessToken);
-      res.redirect(
-        `http://localhost:5173/hubspot/callback?access_token=${accessToken}`,
-      );
+
+      return res.json(response.data);
     } catch (error) {
-      console.error('Error retrieving access token:', error);
-      res.status(500).send('Error retrieving access token');
-    } finally {
-      delete stateStore[state];
+      console.error('Error fetching access token:', error.response.data);
+      return res
+        .status(500)
+        .json({
+          message: 'Failed to fetch access token',
+          error: error.response.data,
+        });
     }
-  }
-
-  // New endpoint to serve the HTML link
-  @Get('install')
-  getInstallLink(
-    @Query('client_id') clientId: string,
-    @Query('redirect_uri') redirectUri: string,
-    @Query('scopes') scopes: string,
-    @Res() res: Response,
-  ) {
-    if (!clientId || !redirectUri || !scopes) {
-      return res.status(400).send('Missing required query parameters');
-    }
-
-    const state = Math.random().toString(36).substring(2); // Generate a new state
-    stateStore[state] = true; // Store the state
-
-    // Construct the authorization URL
-    const authUrl = `https://app.hubspot.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&state=${state}`;
-
-    // Serve the HTML link
-    res.send(`
-      <html>
-        <body>
-          <h1>Install HubSpot Integration</h1>
-          <a href="${authUrl}">Install</a>
-        </body>
-      </html>
-    `);
   }
 }

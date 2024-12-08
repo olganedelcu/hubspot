@@ -1,20 +1,26 @@
 import React, { useState } from "react";
 import "./HubspotIntegration.css";
 
-interface HubSpotIntegrationProps {
-  setClientSecret: (secret: string) => void;
-}
+const HubSpotIntegration: React.FC = () => {
+  const [scopes, setScopes] = useState<string[]>([]);
 
-const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({
-  setClientSecret,
-}) => {
-  const [userId, setUserId] = useState<string>("");
-  const [userRedirectUri, setUserRedirectUri] = useState<string>("");
-  const [scopes, setScopes] = useState<string>("");
-  const [tokenInfo, setTokenInfo] = useState<{
-    code: string;
-    secret: string;
-  } | null>(null);
+  const availableScopes = [
+    { value: "crm.objects.companies.read", label: "Companies Read" },
+    { value: "crm.objects.contacts.read", label: "Contacts Read" },
+    { value: "crm.objects.deals.read", label: "Deals Read" },
+    { value: "crm.objects.tickets.read", label: "Tickets Read" },
+    { value: "e-commerce", label: "E-commerce" },
+  ];
+
+  const handleScopeChange = (value: string) => {
+    setScopes((prevScopes) => {
+      if (prevScopes.includes(value)) {
+        return prevScopes.filter((scope) => scope !== value);
+      } else {
+        return [...prevScopes, value];
+      }
+    });
+  };
 
   const handleIntegration = async () => {
     try {
@@ -25,11 +31,7 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          client_id: userId,
-          redirect_uri: userRedirectUri,
-          scopes: scopes,
-        }),
+        body: JSON.stringify({ scopes }), // Sending the selected scopes
       });
 
       if (!response.ok) {
@@ -50,59 +52,30 @@ const HubSpotIntegration: React.FC<HubSpotIntegrationProps> = ({
     <div>
       <h1>HubSpot Integration</h1>
       <div>
-        <label>
-          User ID (client id):
-          <input
-            type="text"
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
-            placeholder="Enter your HubSpot User ID"
-          />
-        </label>
+        <h3>Scopes (select one or more):</h3>
+        {availableScopes.map((scope) => (
+          <div key={scope.value}>
+            <label>
+              <input
+                type="checkbox"
+                value={scope.value}
+                checked={scopes.includes(scope.value)}
+                onChange={() => handleScopeChange(scope.value)}
+              />
+              {scope.label}
+            </label>
+          </div>
+        ))}
       </div>
       <div>
-        <label>
-          Client Secret:
-          <input
-            type="password"
-            onChange={(e) => setClientSecret(e.target.value)}
-            placeholder="Enter your HubSpot Client Secret"
-          />
-        </label>
-      </div>
-      <div>
-        <label>
-          Your Redirect:
-          <input
-            type="url"
-            value={userRedirectUri}
-            onChange={(e) => setUserRedirectUri(e.target.value)}
-            placeholder="Enter your HubSpot Redirect URI"
-          />
-        </label>
-      </div>
-      <div>
-        <label>
-          Scopes:
-          <select value={scopes} onChange={(e) => setScopes(e.target.value)}>
-            <option value="">Select a scope</option>
-            <option value="crm.objects.companies.read">Companies Read</option>
-            <option value="crm.objects.contacts.read">Contacts Read</option>
-            <option value="crm.objects.deals.read">Deals Read</option>
-            <option value="crm.objects.tickets.read">Tickets Read</option>
-            <option value="e-commerce">E-commerce</option>
-          </select>
-        </label>
+        <h3>Selected Scopes:</h3>
+        <ul>
+          {scopes.map((scope, index) => (
+            <li key={index}>{scope}</li>
+          ))}
+        </ul>
       </div>
       <button onClick={handleIntegration}>Start Integration</button>
-
-      {tokenInfo && (
-        <div>
-          <h2>Token Information</h2>
-          <p>Code: {tokenInfo.code}</p>
-          <p>Client Secret: {tokenInfo.secret}</p>
-        </div>
-      )}
     </div>
   );
 };
