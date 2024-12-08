@@ -1,44 +1,63 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import axios from 'axios';
+import * as qs from 'qs';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private configService: ConfigService) {}
+  constructor(
+    private configService: ConfigService,
+    private userService: UserService,
+  ) {}
 
-  getHubSpotAuthUrl(): string {
-    const clientId = this.configService.get<string>('HUBSPOT_CLIENT_ID');
-    const redirectUri = this.configService.get<string>('REDIRECT_URI');
-    const scope = this.configService.get<string>('SCOPE');
-    const state = 'null'; 
-
-    return `https://app.hubspot.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&state=${state}`;
-  }
-
-  async getAccessToken(authCode: string): Promise<string> {
+  async getAccessToken(
+    authCode: string,
+    redirectUri: string,
+    userId: string,
+  ): Promise<{
+    access_token: string;
+    refresh_token: string;
+    expires_in: number;
+  }> {
     const clientSecret = this.configService.get<string>(
       'HUBSPOT_CLIENT_SECRET',
     );
+    const clientId = this.configService.get<string>('HUBSPOT_CLIENT_ID');
 
-    // Logic to retrieve access token using authCode and clientSecret
-    const response = await fetch('https://api.hubapi.com/oauth/v1/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        client_id: this.configService.get<string>('HUBSPOT_CLIENT_ID'),
-        client_secret: clientSecret,
-        redirect_uri: this.configService.get<string>('REDIRECT_URI'),
-        code: authCode,
-      }).toString(),
-    });
+    try {
+      const response = await axios.post(
+        'https://api.hubapi.com/oauth/v1/token',
+        qs.stringify({
+          grant_type: 'authorization_code',
+          code: authCode,
+          redirect_uri: redirectUri,
+          client_id: clientId,
+          client_secret: clientSecret,
+        }),
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+        },
+      );
 
-    if (!response.ok) {
-      throw new Error('Failed to retrieve access token');
+      const { access_token, refresh_token, expires_in } = response.data;
+
+      // Save the access token and refresh token in the database
+      await this.userService.saveAccessToken(userId, access_token);
+      await this.userService.saveRefreshToken(userId, refresh_token); // Ensure you have a method to save the refresh token
+
+      return { access_token, refresh_token, expires_in };
+    } catch (error) {
+      console.error(
+        'Error retrieving access token:',
+        error.response?.data || error.message,
+      );
+      throw new HttpException(
+        'Failed to retrieve access token',
+        HttpStatus.BAD_REQUEST,
+      );
     }
-
-    const data = await response.json();
-    return data.access_token; // Return the access token
   }
 }
